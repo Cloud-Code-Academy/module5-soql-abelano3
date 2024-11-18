@@ -109,9 +109,16 @@ public with sharing class SOQL {
      * @return The Integer count of Account records.
      * Update the corresponding test class and testGetAccountCount method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static Integer getTotalCountOfAccounts() {
     //  The body of the method
-    //}
+    if (!Schema.sObjectType.Account.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    AggregateResult[] groupedResults = [SELECT COUNT(Id) totalCount FROM Account];
+    Integer accountTotalCount = (Integer)groupedResults[0].get('totalCount');
+    return accountTotalCount;
+    }
 
     /**
      * Question 6
@@ -120,9 +127,16 @@ public with sharing class SOQL {
      * @return A map of Task Ids to Task records.
      * Update the corresponding test class and testGetTasksDueNextWeek method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static Map<Id, Task> getTasksDueNextWeek() {
     //  The body of the method
-    //}
+    if (!Schema.sObjectType.Task.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    Map<Id, Task> tasksDueNextWeek = new Map<Id, Task>([SELECT Id, ActivityDate FROM Task WHERE ActivityDate = NEXT_N_DAYS:7]);
+    return tasksDueNextWeek;
+
+    }
 
     /**
      * Question 7
@@ -131,9 +145,14 @@ public with sharing class SOQL {
      * @return A list of Contact records.
      * Update the corresponding test class and testGetContactsByEmailDomain method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Contact> getContactsByEmailDomain() {
     //  The body of the method
-    //}
+    if (!Schema.sObjectType.Contact.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    return [SELECT FirstName, LastName, Email FROM Contact WHERE Email LIKE '%example.com%'];
+    }
 
     /**
      * Question 8
@@ -143,7 +162,11 @@ public with sharing class SOQL {
      * @return A list of Opportunity records.
      */
     public static List<Opportunity> getOpportunitiesByNameKeyword(String keyword) {
-        return null; // Replace null with the variable you used to store the result
+        if (!Schema.sObjectType.Opportunity.isAccessible()) {
+            System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+        }
+
+        return [SELECT Id, Name, StageName, CloseDate, AccountId FROM Opportunity WHERE Name LIKE : '%' + keyword + '%']; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -152,7 +175,13 @@ public with sharing class SOQL {
      * @return A list of Case records.
      */
     public static List<Case> getFilterCaseOrigins() {
-        return null; // Replace null with the variable you used to store the result
+        List<String> caseOriginFilter = new List<String>{'Web', 'Email', ''};
+
+        if (!Schema.sObjectType.Case.isAccessible()) {
+            System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+        }
+
+        return [SELECT Id, Status, AccountId, Origin FROM Case WHERE Origin != :caseOriginFilter]; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -165,9 +194,14 @@ public with sharing class SOQL {
      * @return A list of Lead records.
      * Update the corresponding test class and testGetLeadsBySourceOrTitle method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Lead> getLeadsBySourceOrTitle(String leadSource, String keyword) {
     //  The body of the method
-    //}    
+    if (!Schema.sObjectType.Lead.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    return [SELECT Id, LastName, Company, Phone, Email, LeadSource, Title FROM Lead WHERE LeadSource LIKE : '%' + leadSource + '%' OR Title LIKE : '%' + keyword + '%'];
+    }    
 
     /**
      * Question 11
