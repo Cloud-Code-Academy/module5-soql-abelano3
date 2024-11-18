@@ -16,7 +16,7 @@
 * Users of this class can expect to gain a solid understanding of SOQL in Apex and
 * be prepared to handle data retrieval tasks in Salesforce development.
 * 
-* @author Your Name
+* @author Anthony Belano
 */
 
 public with sharing class SOQL {
@@ -28,9 +28,14 @@ public with sharing class SOQL {
      * @return List of all leads with Id, LastName, Company, Phone, Email
      * Update the corresponding test class and testGetAllLeads method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Lead> getAllLeads() {
     //  The body of the method
-    //}
+    if (!Schema.sObjectType.Lead.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    return [SELECT Id, LastName, Company, Phone, Email FROM Lead];
+    }
 
     /**
      * Question 2
@@ -39,9 +44,16 @@ public with sharing class SOQL {
      * @return A list of Contact records.
      * Update the corresponding test class and testGetContactsByFirstName method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Contact> getContactsByFirstName() {
     //  The body of the method
-    //}
+    String firstNameFilter = 'John';
+
+    if (!Schema.sObjectType.Contact.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    return [SELECT Id, FirstName, LastName, Name FROM Contact WHERE FirstName = :firstNameFilter];
+    }
 
     /**
      * Question 3
@@ -50,9 +62,22 @@ public with sharing class SOQL {
      * @return A list of Contact Ids.
      * Update the corresponding test class and testGetContactIdsByLastName method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Id> getContactIdsByLastName() {
     //  The body of the method
-    //}
+    List<String> lastNameFilter = new List<String>{'Smith', 'Jones'};
+
+    if (!Schema.sObjectType.Contact.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    List<Contact> contacts = [SELECT Id FROM Contact WHERE LastName IN :lastNameFilter];
+    List<Id> filteredContactIds = new List<Id>();
+    for (Contact con : contacts) {
+        filteredContactIds.add(con.Id);
+    }
+
+    return filteredContactIds;
+    }
 
     /**
      * Question 4
@@ -63,9 +88,19 @@ public with sharing class SOQL {
      * @return A list of Opportunities with important opportunities fields
      * Update the corresponding test class and testGetClosedWonOpportunityCountByAccount method to cover this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
+    public static List<Opportunity> getOpportunitiesByAccount(String accountId) {
     //  The body of the method
-    //}
+    String stageNameFilter = 'Closed Won';
+
+    if (!Schema.sObjectType.Opportunity.isAccessible()) {
+        System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
+    }
+
+    return [SELECT Id, Name, StageName, CloseDate, AccountId, Amount 
+            FROM Opportunity 
+            WHERE StageName = :stageNameFilter
+            AND AccountId = :accountId];
+    }
 
     /**
      * Question 5
