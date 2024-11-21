@@ -212,15 +212,17 @@ public with sharing class SOQL {
      */
     public static List<String> getContactNamesByAccount(Id accountId) {
         // Create a list to hold the Contact LastNames
-
+        List<String> contactLastNames = new List<String>();
         // Query the Contacts
+        List<Contact> contacts = new List<Contact>([SELECT Id, LastName FROM Contact WHERE AccountId = :accountId]);
+
         // Loop through each Contact and add the LastName to the list
-        //for () {
-        //    
-        //}
+        for (Contact con : contacts) {
+            contactLastNames.add(con.LastName);
+        }
 
         // Return the list of Contact LastNames
-        return null; // Replace null with the variable you used to store the result
+        return contactLastNames; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -232,9 +234,11 @@ public with sharing class SOQL {
      */
     public static Decimal getTotalRevenueByStage(String stage) {
         // Use AggregateQuery to get the total revenue
+        AggregateResult[] groupedResults = [SELECT SUM(ExpectedRevenue) totalRevenue FROM Opportunity WHERE StageName = :stage];
+        Decimal opportunityTotalRevenue = (Decimal)groupedResults[0].get('totalRevenue');
 
         // Return the total revenue
-        return null; // Replace null with the variable you used to store the result
+        return opportunityTotalRevenue; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -243,7 +247,7 @@ public with sharing class SOQL {
      * @return A list of the first 10 Accounts ordered by Name.
      */
     public static List<Account> getFirstTenAccounts() {
-        return null; // Replace null with the variable you used to store the result
+        return [SELECT Name FROM Account ORDER BY Name ASC LIMIT 10]; // Replace null with the variable you used to store the result
     }
     
     /**
@@ -252,7 +256,7 @@ public with sharing class SOQL {
      * @return A list of Opportunities with an Amount greater than 100,000, ordered by CloseDate, and limited to 5 records.
      */
     public static List<Opportunity> getHighValueOpportunities() {
-        return null; // Replace null with the variable you used to store the result
+        return [SELECT Amount, CloseDate FROM Opportunity WHERE Amount > 100000 ORDER BY CloseDate LIMIT 5]; // Replace null with the variable you used to store the result
     }
     
     /**
