@@ -70,10 +70,10 @@ public with sharing class SOQL {
         System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
     }
 
-    List<Contact> contacts = [SELECT Id FROM Contact WHERE LastName IN :lastNameFilter];
+    List<Contact> contactsFilteredByLastName = [SELECT Id FROM Contact WHERE LastName IN :lastNameFilter];
     List<Id> filteredContactIds = new List<Id>();
-    for (Contact con : contacts) {
-        filteredContactIds.add(con.Id);
+    for (Contact contactsToAddToList : contactsFilteredByLastName) {
+        filteredContactIds.add(contactsToAddToList.Id);
     }
 
     return filteredContactIds;
@@ -214,11 +214,11 @@ public with sharing class SOQL {
         // Create a list to hold the Contact LastNames
         List<String> contactLastNames = new List<String>();
         // Query the Contacts
-        List<Contact> contacts = new List<Contact>([SELECT Id, LastName FROM Contact WHERE AccountId = :accountId]);
+        List<Contact> contactsFilteredByAccountId = new List<Contact>([SELECT Id, LastName FROM Contact WHERE AccountId = :accountId]);
 
         // Loop through each Contact and add the LastName to the list
-        for (Contact con : contacts) {
-            contactLastNames.add(con.LastName);
+        for (Contact contactsToAddToList : contactsFilteredByAccountId) {
+            contactLastNames.add(contactsToAddToList.LastName);
         }
 
         // Return the list of Contact LastNames
@@ -265,7 +265,7 @@ public with sharing class SOQL {
      * @return A list of Contacts
      */
     public static List<Contact> getBirthdateContacts() {
-        return null; // Replace null with the variable you used to store the result
+        return [SELECT Birthdate FROM Contact ORDER BY Birthdate DESC NULLS LAST LIMIT 3]; // Replace null with the variable you used to store the result
     }
     
     /**
@@ -274,7 +274,7 @@ public with sharing class SOQL {
      * @return A list of Cases
      */
     public static List<Case> getCasesWithStatus() {
-        return null; // Replace null with the variable you used to store the result
+        return [SELECT Id, CaseNumber, CreatedDate FROM Case WHERE Status = 'Open' ORDER BY CreatedDate ASC LIMIT 10 OFFSET 5]; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -286,14 +286,17 @@ public with sharing class SOQL {
      */
     public static Set<Id> getCaseIdsByAccount(Id accountId) {
         // Create a set to hold the Case Ids
+        Set<Id> caseIds = new Set<Id>();
 
         // Query the Cases
-        // Loop through each Case and add the Id to the set
-        //for () {
-        //    
-        //}
+        List<Case> casesFilteredByAccountId = new List<Case>([SELECT Id FROM Case WHERE AccountId = :accountId]);
 
-        return null; // Replace null with the variable you used to store the result
+        // Loop through each Case and add the Id to the set
+        for (Case caseIdsToAddToSet : casesFilteredByAccountId) {
+            caseIds.add(caseIdsToAddToSet.Id);
+        }
+
+        return caseIds; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -308,9 +311,14 @@ public with sharing class SOQL {
         Map<Id, String> accountIdsToNames = new Map<Id, String>();
 
         // Query the Accounts
+        List<Account> accountsFilteredByCountry = new List<Account>([SELECT Id, Name, BillingCountry FROM Account WHERE BillingCountry !=:country]);
+        
         // Loop through each Account and add the Id and Name to the map
+        for (Account accountsToAddToMap : accountsFilteredByCountry) {
+            accountIdsToNames.put(accountsToAddToMap.Id, accountsToAddToMap.name);
+        }
 
-        return null; // Replace null with the variable you used to store the result
+        return accountIdsToNames; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -321,7 +329,8 @@ public with sharing class SOQL {
      * @return The Account Name of the Contact.
      */
     public static String getAccountNameForContact(String contactId) {
-        return null; // Replace null with the variable you used to store the result
+        Contact contactQuerywithAccount = [SELECT Id, Account.Name FROM Contact WHERE Id =: contactId];
+        return contactQuerywithAccount.Account.Name; // Replace null with the variable you used to store the result
     }    
 
     /**
@@ -332,7 +341,11 @@ public with sharing class SOQL {
      * @return An Account record with related Opportunities.
      */
     public static Account getAccountAndOpportunitiesFromAccountId(Id accountId) {
-        return null; // Replace null with the variable you used to store the result
+        if (!Schema.sObjectType.Account.isAccessible() || !Schema.sObjectType.Opportunity.isAccessible()) {
+            System.debug('You do not have access to the Account or Opportunity objects. Please contact your Salesforce Administrator.');
+        }
+        Account accountQueryWithOpportunity = [SELECT Id, Name, (SELECT Id, Name, StageName, Amount FROM Opportunities) FROM Account WHERE Id =: accountId LIMIT 1];
+        return accountQueryWithOpportunity; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -344,37 +357,47 @@ public with sharing class SOQL {
      */
     public static List<Contact> getAccountsWithContactsByState(Id accountId) {
         // Query the Account
-
         // Store the Account's BillingState
-
+        Account accountToQuery = ([SELECT Id, BillingState FROM Account WHERE Id =:accountId]);
         // Query the Contacts
-        return null; // Replace null with the variable you used to store the result
+        if (accountToQuery.BillingState == null) {
+            System.debug('The account does not have a BillingState');
+        }
+        List<Contact> contactsWithSameMailingStateAsAccountBillingState = [SELECT Id, Name, MailingState FROM Contact WHERE MailingState =:accountToQuery.BillingState];
+        return contactsWithSameMailingStateAsAccountBillingState; // Replace null with the variable you used to store the result
     }
 
     /**
      * Question 22
-     * Extracts email domains from them leads, then finds Accounts with matching website domains
+     * Extracts email domains from the leads, then finds Accounts with matching website domains
      * If Lead Email = test@test.com return account with website = www.test.com
      * Example: findAccountsByLeadEmailDomains([set of lead ids]) should return a list of Accounts with matching email domains
-     * @param A set of Lead Ids.
+     * @param leadIds set of Lead Ids.
      * @return A list of Accounts with matching email domains.
      */
     public static List<Account> findAccountsByLeadEmailDomains(Set<Id> leadIds) {
         // Query the Leads
-
         // Create a set of email domains from the Leads
-
+        Set<String> emailDomainsFromLeads = new Set<String>();
         // Loop through each Lead
-
-            // Get the email from the Lead
-
+        // Get the email from the Lead
+        for (Lead leadsToQuery : [SELECT Id, Email FROM Lead WHERE Id =:leadIds]) {
             // Check if the email is not null
-
+            if (leadsToQuery.Email != null){
+                String leadDomain = leadsToQuery.Email.split('@').get(1);
                 // Add the email domain to the set
-
-        
+                emailDomainsFromLeads.add(leadDomain);
+            }
+        }
         // Query the Accounts
-        return null; // Replace null with the variable you used to store the result
+        List<Account> matchingAccounts = new List<Account>();
+        for (Account accountsToQuery : [SELECT Id, Website FROM Account WHERE Website != null]) {
+            String accountDomain = accountsToQuery.Website.split('www.').get(1);
+            if (emailDomainsFromLeads.contains(accountDomain)) {
+                matchingAccounts.add(accountsToQuery);
+            }
+        }
+        return matchingAccounts; // Replace null with the variable you used to store the result
     }
 
     /**
