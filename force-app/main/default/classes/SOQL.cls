@@ -409,19 +409,30 @@ public with sharing class SOQL {
      * @param List of cloned Opportunity Ids
      */
     public static void cloneLineItems(Id origOppId, List<Id> cloneOppIds) {
+        if (!Schema.sObjectType.Opportunity.isAccessible() || !Schema.sObjectType.Opportunity.isCreateable() || !Schema.sObjectType.OpportunityLineItem.isAccessible() || !Schema.sObjectType.OpportunityLineItem.isCreateable()) {
+            System.debug('You do not have access to the Opportunity or Opportunity Line Item object. Please contact your Salesforce Administrator.');
+        }
         // Query the original Opportunity Line Items
-
+        List<OpportunityLineItem> origOppLineItems = [SELECT Id, Name, Quantity, UnitPrice, PricebookEntryId, OpportunityId FROM OpportunityLineItem WHERE OpportunityId =:origOppId];
         // Create a list to hold the new line items
-
+        List<OpportunityLineItem> oppLineItemsToInsert = new List<OpportunityLineItem>();
         // Generate a random number between 1 and 3
-
+        Integer randomNumber = (Integer)Math.random() * 3 + 1;
         // Loop through each cloned Opportunity Id
-
+        for (Id cloneOppId : cloneOppIds) {
             // Loop through each original line item
-
+            for (OpportunityLineItem oppLineItem : origOppLineItems) {
+                OpportunityLineItem newOppLineItem = new OpportunityLineItem();
                 // Clone the original line item and add the random number to the quantity
-
+                newOppLineItem.OpportunityId = cloneOppId;
+                newOppLineItem.Quantity = oppLineItem.Quantity + randomNumber;
+                newOppLineItem.UnitPrice = oppLineItem.UnitPrice;
+                newOppLineItem.PricebookEntryId = oppLineItem.PricebookEntryId;
+                oppLineItemsToInsert.add(newOppLineItem);
+        }
+    }
         // Insert the new line items
+        insert oppLineItemsToInsert;
     }
     
     /**
@@ -431,7 +442,7 @@ public with sharing class SOQL {
      * @return A list of filtered Opportunity
      */
     public static List<Opportunity> getOpportunityDetailsForClosedWon() {        
-        return null; // Replace null with the variable you used to store the result
+        return [SELECT Id, Name, StageName, Primary_Contact__c, AccountId, OwnerId FROM Opportunity WHERE StageName = 'Closed Won']; // Replace null with the variable you used to store the result
     }
 
     /**
@@ -441,17 +452,29 @@ public with sharing class SOQL {
      */
     public static void setPrimaryContact() {
         //Use the getOpportunityDetailsForClosedWon() method to get the Opportunities
-
+        List<Opportunity> opportunities = SOQL.getOpportunityDetailsForClosedWon();
         // Create a set of Account Ids from the Opportunities
-
+        Set<Id> oppAccountIds = new Set<Id>();
+        for (Opportunity oppAccountIdsToAddToSet : opportunities) {
+            oppAccountIds.add(oppAccountIdsToAddToSet.AccountId);
+        }
         // Query the Contacts
-
+        Map<Id, Contact> accountToContactMap = new Map<Id, Contact>();
         // Loop through each Contact and add the Account Id and Contact to the map
-        
+        for (Contact contactQuery : [SELECT AccountId, Id, FirstName, LastName FROM Contact WHERE AccountId =: oppAccountIds]) {
+            accountToContactMap.put(contactQuery.AccountId, contactQuery);
+        }
         // Loop through each Opportunity
-
-                // Update the Opportunity primary contact from accountToContactMap
+            // Update the Opportunity primary contact from accountToContactMap
+        List<Opportunity> opportunitesToUpdate = new List<Opportunity>();
+        for (Opportunity opp : opportunities) {
+            if (accountToContactMap.containsKey(opp.AccountId)) {
+                opp.Primary_Contact__c = accountToContactMap.get(opp.AccountId).Id;
+                opportunitesToUpdate.add(opp);
+            }
+        }
 
         // Update the Opportunities
+        update opportunitesToUpdate;
     }
 }
