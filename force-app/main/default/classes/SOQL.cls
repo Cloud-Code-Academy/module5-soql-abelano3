@@ -151,7 +151,7 @@ public with sharing class SOQL {
         System.debug('You do not have access to this Object.  Please contact your Salesforce Administrator.');
     }
 
-    return [SELECT FirstName, LastName, Email FROM Contact WHERE Email LIKE '%example.com%'];
+    return [SELECT FirstName, LastName, Name, Email FROM Contact WHERE Email LIKE '%example.com%'];
     }
 
     /**
